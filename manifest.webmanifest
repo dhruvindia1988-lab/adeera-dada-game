@@ -1,0 +1,24 @@
+{
+  "name": "Adeera & Dada Guessing Game",
+  "short_name": "Adeera & Dada",
+  "description": "A cozy ABC guessing game for Adeera with sounds, hints, and a custom home photo.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F7F5FF",
+  "theme_color": "#7C5CFF",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
