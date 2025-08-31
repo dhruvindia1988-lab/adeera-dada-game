@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Adeera & Dada Guessing Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --bg:#F7F5FF; --card:#FFFFFF; --accent:#7C5CFF; --accent-2:#00BFA6;
+    --text:#1B1B1F; --muted:#6B6B76; --shadow:0 10px 30px rgba(0,0,0,.08);
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html, body {height:100%; margin:0; background:var(--bg); color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"SF Pro","Helvetica Neue",Arial,"Noto Color Emoji";}
+  .app{min-height:100%; padding:max(env(safe-area-inset-top),24px) clamp(14px,3vw,24px) max(env(safe-area-inset-bottom),24px);
+    display:flex; flex-direction:column; gap:18px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .title{font-size:clamp(22px,2.4vw + 10px,32px); font-weight:900; letter-spacing:.3px}
+  .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  button{-webkit-tap-highlight-color:transparent; border:0; padding:12px 16px;
+    font-size:clamp(16px,2vw + 6px,20px); font-weight:700; border-radius:16px; cursor:pointer; box-shadow:var(--shadow)}
+  .btn{background:var(--accent); color:white}
+  .btn.secondary{background:var(--accent-2)}
+  .btn.ghost{background:white; color:var(--text)}
+  .btn.small{padding:8px 12px; font-size:clamp(14px,1.6vw + 6px,18px)}
+  .screen{flex:1; display:grid; place-items:center}
+  .card{width:min(100%, 900px); background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding: clamp(16px, 2vw + 12px, 28px); display:grid; gap: clamp(14px, 2vw + 6px, 22px)}
+
+  /* HOME */
+  .home-hero{
+    display:grid; gap:18px; text-align:center;
+  }
+  .home-pic{
+    width:100%; max-width:720px; height: clamp(240px, 45vh, 420px);
+    margin:0 auto; border-radius: calc(var(--radius) - 6px); box-shadow:var(--shadow);
+    background:#ecebff center/cover no-repeat; position:relative; overflow:hidden;
+  }
+  .home-pic::after{
+    content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,.0), rgba(0,0,0,.08));
+  }
+  .home-title{
+    font-size: clamp(22px, 2.2vw + 10px, 34px); font-weight:900;
+  }
+  .home-sub{color:var(--muted); font-size: clamp(16px, 1.4vw + 6px, 20px)}
+  .home-actions{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+  .uploader{display:none}
+
+  /* GAME */
+  .letter-row{display:flex; align-items:center; justify-content:center; gap:clamp(12px,1.6vw + 6px,18px)}
+  .letter{font-size:clamp(64px,12vw,160px); font-weight:900; letter-spacing:2px}
+  .is-for{font-size:clamp(18px,2.0vw + 6px,28px); color:var(--muted); font-weight:700}
+  .emoji-wrap{display:flex; align-items:center; justify-content:center; height:clamp(220px, 40vh, 360px);
+    border-radius: calc(var(--radius) - 8px); background:linear-gradient(180deg,#fff,#f5f7ff); position:relative; overflow:hidden}
+  .emoji{font-size:clamp(120px, 20vh, 220px); filter:var(--blur, blur(14px)) brightness(var(--dim,.85));
+    transform:scale(var(--scale,.95)); transition:filter .35s ease, transform .35s ease}
+  .hint-text{text-align:center; font-size:clamp(18px,2vw + 6px,26px); color:var(--muted); min-height:1.8em}
+  .answer{text-align:center; font-size:clamp(22px,2.2vw + 8px,32px); font-weight:800; letter-spacing:.5px; min-height:1.6em}
+  .progress{display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:4px}
+  .dot{width:clamp(10px,1.2vw,14px); height:clamp(10px,1.2vw,14px); background:#E6E6F2; border-radius:50%}
+  .dot.done{background:var(--accent-2)}
+  .dot.current{background:var(--accent); box-shadow:0 0 0 3px rgba(124,92,255,.15)}
+  .actions{display:flex; flex-wrap:wrap; gap:12px; justify-content:center}
+  .row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+  .toggle{display:flex; gap:10px; align-items:center; color:var(--muted); font-weight:700;
+    background:white; padding:8px 12px; border-radius:14px; box-shadow:var(--shadow)}
+  input[type="checkbox"]{width:24px; height:24px}
+  .vol{display:flex; align-items:center; gap:8px; background:white; padding:6px 10px; border-radius:14px; box-shadow:var(--shadow)}
+  .vol input{width:140px}
+  footer{display:flex; justify-content:center; color:var(--muted); font-size:14px}
+  nav{display:flex; gap:10px; align-items:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">Adeera & Dada Guessing Game</div>
+    <div class="controls">
+      <nav>
+        <button class="btn small ghost" id="homeBtn" title="Home">Home</button>
+        <button class="btn small ghost" id="gameBtn" title="Play">Play</button>
+      </nav>
+      <button class="btn small ghost" id="resetBtn">Reset</button>
+      <label class="toggle"><input type="checkbox" id="shuffleToggle" checked> Shuffle</label>
+      <label class="toggle"><input type="checkbox" id="autoRevealToggle" checked> Auto-reveal</label>
+      <label class="toggle" title="Enable or mute speech and dings"><input type="checkbox" id="soundToggle" checked> Sound</label>
+      <div class="vol" title="Volume">🔊 <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8"></div>
+    </div>
+  </header>
+
+  <main class="screen">
+    <!-- HOME SCREEN -->
+    <section class="card" id="home" aria-label="home">
+      <div class="home-hero">
+        <div class="home-pic" id="homePic"></div>
+        <div class="home-title">Welcome, Adeera! 👋</div>
+        <div class="home-sub">Pick a favorite photo for the home screen, then press Play.</div>
+        <div class="home-actions">
+          <button class="btn secondary" id="choosePhotoBtn">Choose Photo</button>
+          <input class="uploader" id="photoInput" type="file" accept="image/*" />
+          <button class="btn" id="startBtn">Play</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME SCREEN -->
+    <section class="card" id="game" role="group" aria-label="game" hidden>
+      <div class="letter-row">
+        <div class="letter" id="letter">A</div>
+        <div class="is-for" aria-hidden="true">is for…</div>
+      </div>
+      <div class="emoji-wrap">
+        <div class="emoji" id="emoji" aria-label="hidden picture">🍎</div>
+      </div>
+      <div class="hint-text" id="hint">Guess what it is!</div>
+      <div class="answer" id="answer"></div>
+      <div class="actions">
+        <div class="row">
+          <button class="btn" id="gotItBtn">I got it!</button>
+          <button class="btn secondary" id="hintBtn">Hint</button>
+          <button class="btn ghost" id="passBtn">Pass</button>
+        </div>
+        <div class="row">
+          <button class="btn small ghost" id="revealBtn">Reveal</button>
+          <button class="btn small ghost" id="nextBtn">Next</button>
+        </div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </section>
+  </main>
+
+  <footer>Tip: say the letter sound together (e.g., “/b/ like ball”).</footer>
+</div>
+
+<script>
+/* ---------- Router (Home <-> Game) ---------- */
+const homeSection = document.getElementById('home');
+const gameSection = document.getElementById('game');
+const homeBtn = document.getElementById('homeBtn');
+const gameBtn = document.getElementById('gameBtn');
+const startBtn = document.getElementById('startBtn');
+
+function showHome(){ homeSection.hidden = false; gameSection.hidden = true; window.scrollTo(0,0); }
+function showGame(){ homeSection.hidden = true; gameSection.hidden = false; window.scrollTo(0,0); }
+
+homeBtn.addEventListener('click', showHome);
+gameBtn.addEventListener('click', showGame);
+startBtn.addEventListener('click', ()=>{ showGame(); ensureAudioCtx(); });
+
+/* ---------- Home Photo (saved offline) ---------- */
+const homePic = document.getElementById('homePic');
+const choosePhotoBtn = document.getElementById('choosePhotoBtn');
+const photoInput = document.getElementById('photoInput');
+
+function applyHomeImageFromStore(){
+  const dataURL = localStorage.getItem('home_image_data_url');
+  if(dataURL){ homePic.style.backgroundImage = `url('${dataURL}')`; }
+}
+applyHomeImageFromStore();
+
+choosePhotoBtn.addEventListener('click', ()=> photoInput.click());
+photoInput.addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataURL = reader.result;
+    localStorage.setItem('home_image_data_url', dataURL);
+    homePic.style.backgroundImage = `url('${dataURL}')`;
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ---------- Game Data: pools per letter ---------- */
+const DATA = {
+  A: [
+    { word:'Apple', emoji:'🍎', speakSound:'ah', hints:['It’s a fruit.','Teachers love this gift.','Keeps the doctor away!']},
+    { word:'Ant', emoji:'🐜', speakSound:'a', hints:['Tiny insect.','Likes sugar.','Lives in a colony.']},
+    { word:'Airplane', emoji:'✈️', speakSound:'ay', hints:['It flies.','Has wings.','Takes us on trips.']},
+  ],
+  B: [
+    { word:'Ball', emoji:'⚽️', speakSound:'buh', hints:['Kick or throw it.','It’s round.','Used in many sports.']},
+    { word:'Banana', emoji:'🍌', speakSound:'buh', hints:['Yellow fruit.','Monkeys love it.','Peel to eat.']},
+    { word:'Bee', emoji:'🐝', speakSound:'buh', hints:['Buzzes around.','Makes honey.','Loves flowers.']},
+  ],
+  C: [
+    { word:'Cat', emoji:'🐱', speakSound:'kuh', hints:['Says “meow.”','Likes naps.','Chases mice.']},
+    { word:'Cake', emoji:'🎂', speakSound:'kuh', hints:['Sweet treat.','Candles.','Birthday time!']},
+    { word:'Car', emoji:'🚗', speakSound:'kuh', hints:['Vroom!','Has wheels.','Drives on roads.']},
+  ],
+  D: [
+    { word:'Dog', emoji:'🐶', speakSound:'duh', hints:['Says “woof.”','Wags tail.','Best friend.']},
+    { word:'Dinosaur', emoji:'🦖', speakSound:'duh', hints:['Very old.','Big and strong.','RAWR!']},
+    { word:'Duck', emoji:'🦆', speakSound:'duh', hints:['Says “quack.”','Likes ponds.','Has a bill.']},
+  ],
+  E: [
+    { word:'Elephant', emoji:'🐘', speakSound:'eh', hints:['Big animal.','Has a trunk.','Gentle giant.']},
+    { word:'Egg', emoji:'🥚', speakSound:'eh', hints:['Crack to cook.','From a chicken.','Breakfast.']},
+    { word:'Earth', emoji:'🌍', speakSound:'eh', hints:['Our home.','Blue & green.','Orbits the Sun.']},
+  ],
+  F: [
+    { word:'Fish', emoji:'🐟', speakSound:'fff', hints:['Lives in water.','Swims fast.','Has gills.']},
+    { word:'Fire', emoji:'🔥', speakSound:'fff', hints:['Very hot.','Needs air.','Keeps warm.']},
+    { word:'Fox', emoji:'🦊', speakSound:'fff', hints:['Orange animal.','Pointy ears.','Clever!']},
+  ],
+  G: [
+    { word:'Grapes', emoji:'🍇', speakSound:'guh', hints:['Little fruit.','Purple/green.','In bunches.']},
+    { word:'Goat', emoji:'🐐', speakSound:'guh', hints:['Says “maa.”','Climbs hills.','Likes grass.']},
+    { word:'Gift', emoji:'🎁', speakSound:'guh', hints:['Wrapped box.','Ribbon.','Surprise!']},
+  ],
+  H: [
+    { word:'House', emoji:'🏠', speakSound:'hhh', hints:['We live here.','Doors & windows.','Cozy home.']},
+    { word:'Hat', emoji:'👒', speakSound:'hhh', hints:['On your head.','Sun shade.','Fashion!']},
+    { word:'Heart', emoji:'❤️', speakSound:'hhh', hints:['Beats.','Love symbol.','Thump-thump.']},
+  ],
+  I: [
+    { word:'Ice cream', emoji:'🍦', speakSound:'ih', hints:['Cold treat.','Sweet & creamy.','Melts in sun.']},
+    { word:'Igloo', emoji:'🧊', speakSound:'ih', hints:['Snow house.','Very cold.','Cozy inside.']},
+    { word:'Insect', emoji:'🐞', speakSound:'ih', hints:['Tiny creature.','Six legs.','Crawls or flies.']},
+  ],
+  J: [
+    { word:'Juice', emoji:'🧃', speakSound:'juh', hints:['You drink it.','From fruit.','Box or glass.']},
+    { word:'Jeans', emoji:'👖', speakSound:'juh', hints:['Clothes.','Blue.','Pockets!']},
+    { word:'Jellyfish', emoji:'🎐', speakSound:'juh', hints:['Ocean animal.','Tentacles.','Floats.']},
+  ],
+  K: [
+    { word:'Kite', emoji:'🪁', speakSound:'kuh', hints:['It flies.','String in hand.','Wind helps.']},
+    { word:'Koala', emoji:'🐨', speakSound:'kuh', hints:['Australia.','Eucalyptus.','Sleepy.']},
+    { word:'Key', emoji:'🔑', speakSound:'kuh', hints:['Opens doors.','Metal.','Keep safe.']},
+  ],
+  L: [
+    { word:'Lion', emoji:'🦁', speakSound:'lll', hints:['Big cat.','Mane.','Roars loudly!']},
+    { word:'Leaf', emoji:'🍃', speakSound:'lll', hints:['Green.','On trees.','Falls in autumn.']},
+    { word:'Lemon', emoji:'🍋', speakSound:'lll', hints:['Yellow.','Sour.','Lemonade.']},
+  ],
+  M: [
+    { word:'Moon', emoji:'🌙', speakSound:'mmm', hints:['Night sky.','Banana shape.','Orbits Earth.']},
+    { word:'Monkey', emoji:'🐵', speakSound:'mmm', hints:['Climbs trees.','Bananas.','Playful!']},
+    { word:'Milk', emoji:'🥛', speakSound:'mmm', hints:['You drink it.','White.','Strong bones.']},
+  ],
+  N: [
+    { word:'Nest', emoji:'🪹', speakSound:'nnn', hints:['Bird home.','Sticks.','Holds eggs.']},
+    { word:'Nose', emoji:'👃', speakSound:'nnn', hints:['On your face.','Smell.','Two nostrils.']},
+    { word:'Nut', emoji:'🥜', speakSound:'nnn', hints:['Crunchy.','Squirrels.','Tree.']},
+  ],
+  O: [
+    { word:'Octopus', emoji:'🐙', speakSound:'o', hints:['Sea animal.','Eight arms.','Clever!']},
+    { word:'Orange', emoji:'🍊', speakSound:'o', hints:['Fruit.','Citrus.','Juicy.']},
+    { word:'Owl', emoji:'🦉', speakSound:'o', hints:['Night bird.','Big eyes.','Says “hoo.”']},
+  ],
+  P: [
+    { word:'Panda', emoji:'🐼', speakSound:'puh', hints:['Black & white.','Bamboo.','Gentle bear.']},
+    { word:'Pizza', emoji:'🍕', speakSound:'puh', hints:['Cheesy.','Slices.','Oven baked.']},
+    { word:'Pig', emoji:'🐷', speakSound:'puh', hints:['Farm animal.','“Oink.”','Loves mud.']},
+  ],
+  Q: [
+    { word:'Queen', emoji:'👸', speakSound:'kwuh', hints:['Royal.','Crown.','Kingdom.']},
+    { word:'Quilt', emoji:'🛏️', speakSound:'kwuh', hints:['Blanket.','Many colors.','Cozy.']},
+    { word:'Quail', emoji:'🐦', speakSound:'kwuh', hints:['Small bird.','Brown.','Eggs.']},
+  ],
+  R: [
+    { word:'Rainbow', emoji:'🌈', speakSound:'rrr', hints:['After rain.','Many colors.','Arc.']},
+    { word:'Robot', emoji:'🤖', speakSound:'rrr', hints:['Machine.','Beep boop.','Helper.']},
+    { word:'Rose', emoji:'🌹', speakSound:'rrr', hints:['Flower.','Nice smell.','Thorns.']},
+  ],
+  S: [
+    { word:'Sun', emoji:'☀️', speakSound:'sss', hints:['Very bright.','Warms day.','Big star.']},
+    { word:'Star', emoji:'⭐️', speakSound:'sss', hints:['Shines at night.','Twinkles.','In space.']},
+    { word:'Snake', emoji:'🐍', speakSound:'sss', hints:['Long.','Slithers.','Hisses.']},
+  ],
+  T: [
+    { word:'Train', emoji:'🚂', speakSound:'tuh', hints:['Choo-choo!','On tracks.','Pulls cars.']},
+    { word:'Tiger', emoji:'🐯', speakSound:'tuh', hints:['Big cat.','Stripes.','Roars.']},
+    { word:'Tomato', emoji:'🍅', speakSound:'tuh', hints:['Red.','Sauces.','Salads.']},
+  ],
+  U: [
+    { word:'Umbrella', emoji:'☂️', speakSound:'uh', hints:['Rainy days.','Keeps dry.','Pop it open.']},
+    { word:'Unicorn', emoji:'🦄', speakSound:'yoo', hints:['Magical horse.','Horn.','Sparkly!']},
+    { word:'Up', emoji:'⬆️', speakSound:'uh', hints:['Opposite down.','Arrow.','Look sky.']},
+  ],
+  V: [
+    { word:'Violin', emoji:'🎻', speakSound:'vvv', hints:['Instrument.','Bow.','Pretty notes.']},
+    { word:'Volcano', emoji:'🌋', speakSound:'vvv', hints:['Mountain.','Hot lava.','Boom!']},
+    { word:'Van', emoji:'🚐', speakSound:'vvv', hints:['Vehicle.','Many seats.','Road trip!']},
+  ],
+  W: [
+    { word:'Whale', emoji:'🐳', speakSound:'wuh', hints:['Giant.','Spouts water.','Sings.']},
+    { word:'Watermelon', emoji:'🍉', speakSound:'wuh', hints:['Green outside.','Red inside.','Summer fruit.']},
+    { word:'Watch', emoji:'⌚️', speakSound:'wuh', hints:['On wrist.','Tells time.','Tick tock.']},
+  ],
+  X: [
+    { word:'Xylophone', emoji:'🪇', speakSound:'zzz', hints:['Makes music.','Colorful bars.','Tap with mallets.']},
+    { word:'X-ray', emoji:'🩻', speakSound:'eks', hints:['See bones.','Doctor.','Picture inside.']},
+  ],
+  Y: [
+    { word:'Yarn', emoji:'🧶', speakSound:'yuh', hints:['Soft string.','Knitting.','Cats love it!']},
+    { word:'Yo-yo', emoji:'🪀', speakSound:'yuh', hints:['Toy.','Up & down.','On a string.']},
+    { word:'Yogurt', emoji:'🥣', speakSound:'yuh', hints:['Creamy snack.','Cup.','Fruit flavors.']},
+  ],
+  Z: [
+    { word:'Zebra', emoji:'🦓', speakSound:'zzz', hints:['Black & white.','Like a horse.','Grasslands.']},
+    { word:'Zoo', emoji:'🦒', speakSound:'zzz', hints:['Animals live here.','Families visit.','Lots to see.']},
+    { word:'Zero', emoji:'0️⃣', speakSound:'zzz', hints:['Number.','Before one.','Nothing!']},
+  ],
+};
+const LETTERS = Object.keys(DATA);
+
+/* ---------- Elements ---------- */
+const letterEl = document.getElementById('letter');
+const emojiEl  = document.getElementById('emoji');
+const hintEl   = document.getElementById('hint');
+const answerEl = document.getElementById('answer');
+const progressEl = document.getElementById('progress');
+
+const gotItBtn = document.getElementById('gotItBtn');
+const hintBtn  = document.getElementById('hintBtn');
+const passBtn  = document.getElementById('passBtn');
+const revealBtn= document.getElementById('revealBtn');
+const nextBtn  = document.getElementById('nextBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+const shuffleToggle = document.getElementById('shuffleToggle');
+const autoRevealToggle = document.getElementById('autoRevealToggle');
+const soundToggle = document.getElementById('soundToggle');
+const volumeSlider = document.getElementById('volume');
+
+/* ---------- State ---------- */
+let order = [];
+let idx = 0;
+let hintIndex = 0;
+let revealed = false;
+let currentItem = null;
+
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+  return array;
+}
+function buildOrder(){
+  const base = [...Array(LETTERS.length).keys()];
+  const useShuffle = localStorage.getItem('abc_shuffle') !== 'false';
+  shuffleToggle.checked = useShuffle;
+  return useShuffle ? shuffle(base) : base;
+}
+function savePrefs(){
+  localStorage.setItem('abc_shuffle', shuffleToggle.checked ? 'true' : 'false');
+  localStorage.setItem('abc_auto_reveal', autoRevealToggle.checked ? 'true' : 'false');
+  localStorage.setItem('abc_sound', soundToggle.checked ? 'true' : 'false');
+  localStorage.setItem('abc_volume', String(volumeSlider.value));
+}
+function restorePrefs(){
+  const s = localStorage.getItem('abc_shuffle');
+  const a = localStorage.getItem('abc_auto_reveal');
+  const snd = localStorage.getItem('abc_sound');
+  const vol = localStorage.getItem('abc_volume');
+  if(s !== null) shuffleToggle.checked = (s === 'true');
+  if(a !== null) autoRevealToggle.checked = (a === 'true');
+  if(snd !== null) soundToggle.checked = (snd === 'true');
+  if(vol !== null) volumeSlider.value = vol;
+}
+
+/* ---------- Progress UI ---------- */
+function setProgress(){
+  progressEl.innerHTML = '';
+  order.forEach((_, i)=>{
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < idx ? ' done' : i === idx ? ' current' : '');
+    progressEl.appendChild(d);
+  });
+}
+
+/* ---------- Pick random item for letter ---------- */
+function pickItemFor(letter){
+  const pool = DATA[letter];
+  const lastKey = 'last_idx_' + letter;
+  const last = Number(localStorage.getItem(lastKey));
+  let choice = Math.floor(Math.random()*pool.length);
+  if(!Number.isNaN(last) && pool.length > 1){
+    let guard = 0;
+    while(choice === last && guard++ < 5){
+      choice = Math.floor(Math.random()*pool.length);
+    }
+  }
+  localStorage.setItem(lastKey, String(choice));
+  return pool[choice];
+}
+
+/* ---------- Blur helper ---------- */
+function setBlur(active){
+  if(active){
+    emojiEl.style.setProperty('--blur','blur(14px)');
+    emojiEl.style.setProperty('--dim','.85');
+    emojiEl.style.setProperty('--scale','.95');
+  }else{
+    emojiEl.style.setProperty('--blur','blur(0px)');
+    emojiEl.style.setProperty('--dim','1');
+    emojiEl.style.setProperty('--scale','1');
+  }
+}
+
+/* ---------- Render / Next / Reveal ---------- */
+function render(){
+  const L = LETTERS[order[idx]];
+  currentItem = pickItemFor(L);
+  letterEl.textContent = L;
+  emojiEl.textContent  = currentItem.emoji;
+  hintIndex = 0;
+  revealed = false;
+  setBlur(true);
+  hintEl.textContent = 'Guess what it is!';
+  answerEl.textContent = '';
+  setProgress();
+}
+function next(){
+  if(idx < order.length - 1){
+    idx++;
+    render();
+  } else {
+    hintEl.textContent = 'Yay! You finished the alphabet 🎉';
+    answerEl.textContent = 'Tap Reset to play again.';
+    setBlur(false);
+  }
+}
+function reveal(){
+  if(revealed) return;
+  revealed = true;
+  setBlur(false);
+  answerEl.textContent = `${letterEl.textContent} is for ${currentItem.word}!`;
+  playCelebrate();
+  speakReveal();
+}
+
+/* ---------- Hints ---------- */
+function doHint(){
+  const item = currentItem;
+  const text = item.hints[Math.min(hintIndex, item.hints.length-1)];
+  if(hintIndex >= 1){
+    const masked = item.word[0] + ' ' + '•'.repeat(item.word.length-1);
+    hintEl.textContent = `${text}  (${masked})`;
+  } else {
+    hintEl.textContent = text;
+  }
+  if(hintIndex === 0){ emojiEl.style.setProperty('--blur','blur(10px)'); }
+  if(hintIndex === 1){ emojiEl.style.setProperty('--blur','blur(6px)'); }
+  if(hintIndex >= 2){ setBlur(false); }
+  hintIndex++;
+}
+
+/* ---------- Audio (speech + ding) ---------- */
+let audioCtx = null;
+function ensureAudioCtx(){
+  if(audioCtx) return audioCtx;
+  try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  return audioCtx;
+}
+function playCelebrate(){
+  if(!soundToggle.checked) return;
+  const ctx = ensureAudioCtx(); if(!ctx) return;
+  const vol = Number(volumeSlider.value);
+  const o = ctx.createOscillator(); const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type='sine';
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(880, t);
+  o.frequency.exponentialRampToValueAtTime(1320, t + 0.12);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.12*vol + 0.0001, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+  o.start(t); o.stop(t + 0.26);
+}
+function speak(text){
+  if(!soundToggle.checked) return;
+  if(!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.9; u.pitch = 1.1; u.volume = Number(volumeSlider.value);
+  const voices = speechSynthesis.getVoices();
+  const en = voices.find(v => /en-/i.test(v.lang)) || voices[0];
+  if(en) u.voice = en;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+function speakReveal(){
+  const L = letterEl.textContent;
+  const s = currentItem.speakSound;
+  if(s){ speak(`${L} says ${s}.`); setTimeout(()=> speak(`${L} is for ${currentItem.word}.`), 650); }
+  else { speak(`${L} is for ${currentItem.word}.`); }
+}
+
+/* ---------- Buttons ---------- */
+gotItBtn.addEventListener('click', ()=>{
+  ensureAudioCtx();
+  if(autoRevealToggle.checked && !revealed){ reveal(); setTimeout(next, 700); }
+  else { reveal(); }
+});
+revealBtn.addEventListener('click', ()=>{ ensureAudioCtx(); reveal(); });
+nextBtn.addEventListener('click', ()=>{ ensureAudioCtx(); if(!revealed) reveal(); next(); });
+hintBtn.addEventListener('click', ()=>{ ensureAudioCtx(); doHint(); });
+passBtn.addEventListener('click', ()=>{ ensureAudioCtx(); reveal(); setTimeout(next, 700); });
+
+resetBtn.addEventListener('click', ()=>{ order = buildOrder(); idx=0; render(); showGame(); });
+shuffleToggle.addEventListener('change', ()=>{ savePrefs(); order = buildOrder(); idx=0; render(); });
+autoRevealToggle.addEventListener('change', savePrefs);
+soundToggle.addEventListener('change', savePrefs);
+volumeSlider.addEventListener('input', savePrefs);
+
+/* ---------- Init ---------- */
+restorePrefs();
+order = buildOrder();
+render();
+speechSynthesis && (speechSynthesis.onvoiceschanged = ()=>{});
+document.addEventListener('touchend', ()=>{ if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); } }, {passive:true});
+
+/* ---------- Register Service Worker (for HTTPS hosting) ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{ /* no-op */ });
+  });
+}
+</script>
+</body>
+</html>
